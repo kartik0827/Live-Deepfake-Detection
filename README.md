@@ -1,158 +1,168 @@
-# AASIST
+# 🎯 Live Deepfake Detection — Fusion Scanner
 
-This repository provides the overall framework for training and evaluating audio anti-spoofing systems proposed in ['AASIST: Audio Anti-Spoofing using Integrated Spectro-Temporal Graph Attention Networks'](https://arxiv.org/abs/2110.01200)
+A real-time deepfake detection system that **automatically hunts for faces on screen**, locks onto them with a sniper-scope overlay, and runs **dual visual + audio analysis pipelines** simultaneously.
 
-### Getting started
-`requirements.txt` must be installed for execution. We state our experiment environment for those who prefer to simulate as similar as possible. 
-- Installing dependencies
+![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-ee4c2c)
+![License: MIT](https://img.shields.io/badge/License-MIT-green)
+
+---
+
+## ✨ Features
+
+| Feature | Description |
+|---------|-------------|
+| **Auto-Tracking** | MTCNN-based full-screen face detection with smooth lerp tracking |
+| **Visual Pipeline** | EfficientNetV2-S feature extraction → GRU temporal classifier |
+| **Audio Pipeline** | Live microphone capture → AASIST anti-spoofing model |
+| **Score Fusion** | Weighted combination (70% visual + 30% audio) for robust detection |
+| **Sniper-Scope UI** | Transparent PyQt6 overlay with crosshairs, spinning arcs, and colour-coded feedback |
+| **Manual Mode** | Press `M` to switch to manual drag-to-position mode |
+
+### Colour States
+- ⚪ **Grey** — Searching for a face
+- 🟡 **Yellow** — Face acquired, filling frame buffer
+- 🟢 **Green** — Fusion says **REAL**
+- 🔴 **Red** — Fusion says **FAKE**
+
+---
+
+## 🏗️ Architecture
+
 ```
+┌──────────────────────────────────────────────────────┐
+│                    FusionOverlay (UI)                 │
+│         Transparent sniper-scope window              │
+│         Fuses visual + audio scores                  │
+└──────────┬───────────────┬───────────────┬───────────┘
+           │               │               │
+    ┌──────▼──────┐  ┌─────▼──────┐  ┌─────▼──────┐
+    │ GlobalScan  │  │ ModelThread │  │ AudioScan  │
+    │ Thread      │  │            │  │ Thread     │
+    │             │  │ EfficientNet│  │            │
+    │ Full-screen │  │ + GRU on   │  │ PyAudio +  │
+    │ MTCNN face  │  │ locked     │  │ AASIST on  │
+    │ hunting     │  │ region     │  │ microphone │
+    └─────────────┘  └────────────┘  └────────────┘
+```
+
+---
+
+## 📋 Prerequisites
+
+- **Python** 3.10 or higher
+- **CUDA** (optional, recommended for GPU acceleration)
+- **Microphone** for audio pipeline
+- A screen with a face visible (video call, photo, etc.)
+
+---
+
+## 🚀 Quick Start
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/bps-rajora/Live-Deepfake-Detection.git
+cd Live-Deepfake-Detection
+```
+
+### 2. Create a virtual environment
+
+```bash
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# Linux / macOS
+source .venv/bin/activate
+```
+
+### 3. Install dependencies
+
+```bash
 pip install -r requirements.txt
-```
-- Our environment (for GPU training)
-  - Based on a docker image: `pytorch:1.6.0-cuda10.1-cudnn7-runtime`
-  - GPU: 1 NVIDIA Tesla V100
-    - About 16GB is required to train AASIST using a batch size of 24
-  - gpu-driver: 418.67
-
-### Data preparation
-We train/validate/evaluate AASIST using the ASVspoof 2019 logical access dataset [4].
-```
-python ./download_dataset.py
-```
-(Alternative) Manual preparation is available via 
-- ASVspoof2019 dataset: https://datashare.ed.ac.uk/handle/10283/3336
-  1. Download `LA.zip` and unzip it
-  2. Set your dataset directory in the configuration file
-
-### Training 
-The `main.py` includes train/validation/evaluation.
-
-To train AASIST [1]:
-```
-python main.py --config ./config/AASIST.conf
-```
-To train AASIST-L [1]:
-```
-python main.py --config ./config/AASIST-L.conf
+pip install timm facenet-pytorch pyaudio
 ```
 
-#### Training baselines
+### 4. Download model weights
 
-We additionally enabled the training of RawNet2[2] and RawGAT-ST[3]. 
+The pre-trained weights are **not included** in this repo due to file-size limits. Download them and place into `models/weights/`:
 
-To Train RawNet2 [2]:
-```
-python main.py --config ./config/RawNet2_baseline.conf
-```
+| Model | File | Destination |
+|-------|------|-------------|
+| EfficientNetV2-S (video) | `best_ffpp_efficientnet.pth` | `models/weights/VIDEO/` |
+| GRU temporal head | `best_rnn.pt` | `models/weights/VIDEO/` |
+| AASIST (audio) | `AASIST.pth` | `models/weights/AASIST/` |
+| AASIST-L (audio, lighter) | `AASIST-L.pth` | `models/weights/AASIST/` |
 
-To train RawGAT-ST [3]:
-```
-python main.py --config ./config/RawGATST_baseline.conf
-```
+> **Note:** The application will still launch if weights are missing — the corresponding pipeline will simply show "OFF".
 
-### Pre-trained models
-We provide pre-trained AASIST and AASIST-L.
+### 5. Download MediaPipe model files
 
-To evaluate AASIST [1]:
-- It shows `EER: 0.83%`, `min t-DCF: 0.0275`
-```
-python main.py --eval --config ./config/AASIST.conf
-```
-To evaluate AASIST-L [1]:
-- It shows `EER: 0.99%`, `min t-DCF: 0.0309`
-- Model has `85,306` parameters
-```
-python main.py --eval --config ./config/AASIST-L.conf
-```
+Place these in the project root:
+- `face_landmarker.task` — [Download from Google](https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task)
+- `blaze_face_short_range.tflite` — [Download from Google](https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/latest/blaze_face_short_range.tflite)
 
+### 6. Run
 
-### Developing custom models
-Simply by adding a configuration file and a model architecture, one can train and evaluate their models.
+```bash
+# Full Fusion Scanner (visual + audio)
+python FusionScanner.py
 
-To train a custom model:
-```
-1. Define your model
-  - The model should be a class named "Model"
-2. Make a configuration by modifying "model_config"
-  - architecture: filename of your model.
-  - hyper-parameters to be tuned can be also passed using variables in "model_config"
-3. run python main.py --config {CUSTOM_CONFIG_NAME}
+# Visual-only Auto Tracker
+python AutoTracker.py
 ```
 
-### License
+---
+
+## ⌨️ Controls
+
+| Key | Action |
+|-----|--------|
+| `M` | Toggle Manual / Auto tracking mode |
+| `+` / `-` | Resize the scanner overlay |
+| `R` | Reset the frame buffer |
+| `Esc` | Quit |
+| **Drag** | Move the overlay (Manual mode) |
+
+---
+
+## 📁 Project Structure
+
 ```
-Copyright (c) 2021-present NAVER Corp.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
-
-### Acknowledgements
-This repository is built on top of several open source projects. 
-- [ASVspoof 2021 baseline repo](https://github.com/asvspoof-challenge/2021/tree/main/LA/Baseline-RawNet2)
-- [min t-DCF implementation](https://www.asvspoof.org/resources/tDCF_python_v2.zip)
-
-The repository for baseline RawGAT-ST model will be open
--  https://github.com/eurecom-asp/RawGAT-ST-antispoofing
-
-The dataset we use is ASVspoof 2019 [4]
-- https://www.asvspoof.org/index2019.html
-
-### References
-[1] AASIST: Audio Anti-Spoofing using Integrated Spectro-Temporal Graph Attention Networks
-```bibtex
-@INPROCEEDINGS{Jung2021AASIST,
-  author={Jung, Jee-weon and Heo, Hee-Soo and Tak, Hemlata and Shim, Hye-jin and Chung, Joon Son and Lee, Bong-Jin and Yu, Ha-Jin and Evans, Nicholas},
-  booktitle={arXiv preprint arXiv:2110.01200}, 
-  title={AASIST: Audio Anti-Spoofing using Integrated Spectro-Temporal Graph Attention Networks}, 
-  year={2021}
+.
+├── FusionScanner.py        # Main app: visual + audio fusion scanner
+├── AutoTracker.py          # Visual-only auto-tracking scanner
+├── AASISTMODEL.py          # AASIST model wrapper for live audio inference
+├── realtime_inference.py   # Standalone real-time inference script
+├── main.py                 # AASIST training / evaluation entry point
+├── models/
+│   ├── AASIST.py           # AASIST model architecture
+│   ├── RawNet2Spoof.py     # RawNet2 baseline model
+│   ├── RawNetGatSpoofST.py # RawGAT-ST baseline model
+│   └── weights/            # Pre-trained weights (not tracked by git)
+│       ├── AASIST/
+│       └── VIDEO/
+├── config/                 # Training config files (.conf)
+├── requirements.txt
+├── LICENSE                 # MIT License
+└── NOTICE                  # Third-party attributions
 ```
 
-[2] End-to-End anti-spoofing with RawNet2
-```bibtex
-@INPROCEEDINGS{Tak2021End,
-  author={Tak, Hemlata and Patino, Jose and Todisco, Massimiliano and Nautsch, Andreas and Evans, Nicholas and Larcher, Anthony},
-  booktitle={Proc. ICASSP}, 
-  title={End-to-End anti-spoofing with RawNet2}, 
-  year={2021},
-  pages={6369-6373}
-}
-```
+---
 
-[3] End-to-end spectro-temporal graph attention networks for speaker verification anti-spoofing and speech deepfake detection
-```bibtex
-@inproceedings{tak21_asvspoof,
-  author={Tak, Hemlata and Jung, Jee-weon and Patino, Jose and Kamble, Madhu and Todisco, Massimiliano and Evans, Nicholas},
-  booktitle={Proc. ASVSpoof Challenge},
-  title={End-to-end spectro-temporal graph attention networks for speaker verification anti-spoofing and speech deepfake detection},
-  year={2021},
-  pages={1--8}
-```
+## 🙏 Acknowledgements
 
-[4] ASVspoof 2019: A large-scale public database of synthesized, converted and replayed speech
-```bibtex
-@article{wang2020asvspoof,
-  title={ASVspoof 2019: A large-scale public database of synthesized, converted and replayed speech},
-  author={Wang, Xin and Yamagishi, Junichi and Todisco, Massimiliano and Delgado, H{\'e}ctor and Nautsch, Andreas and Evans, Nicholas and Sahidullah, Md and Vestman, Ville and Kinnunen, Tomi and Lee, Kong Aik and others},
-  journal={Computer Speech \& Language},
-  volume={64},
-  pages={101114},
-  year={2020},
-  publisher={Elsevier}
-}
-```
+This project builds upon:
+
+- **[AASIST](https://github.com/clovaai/aasist)** — Audio Anti-Spoofing using Integrated Spectro-Temporal Graph Attention Networks (NAVER Corp.)
+- **[ASVspoof 2019](https://www.asvspoof.org/)** — Large-scale public database of synthesized, converted, and replayed speech
+- **[EfficientNetV2](https://github.com/huggingface/pytorch-image-models)** — via `timm` library
+- **[MTCNN](https://github.com/timesler/facenet-pytorch)** — via `facenet-pytorch`
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+Original AASIST code: Copyright (c) 2021-present NAVER Corp. — see [NOTICE](NOTICE).

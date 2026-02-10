@@ -2,3 +2,13 @@ torch>=1.6.0
 torchcontrib
 numpy
 soundfile
+librosa
+sounddevice
+opencv-python
+mss
+mediapipe
+torchvision
+torchaudio
+PyQt6
+pillow
+transformers
