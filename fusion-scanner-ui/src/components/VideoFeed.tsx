@@ -45,7 +45,7 @@ export default function VideoFeed({ data, videoFrame }: VideoFeedProps) {
         img.src = `data:image/jpeg;base64,${videoFrame}`;
     }, [videoFrame, dimensions]);
 
-    // ── Draw demo pattern when no video ─────────────────────
+    // ── Draw waiting state when no video ──────────────────────
     useEffect(() => {
         if (videoFrame || !canvasRef.current) return;
         const ctx = canvasRef.current.getContext('2d');
@@ -53,38 +53,21 @@ export default function VideoFeed({ data, videoFrame }: VideoFeedProps) {
 
         const { w, h } = dimensions;
 
-        // Dark background with subtle gradient
+        // Dark background
         const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) / 2);
         grad.addColorStop(0, '#111827');
         grad.addColorStop(1, '#0a0e17');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
 
-        // Grid lines
-        ctx.strokeStyle = 'rgba(0, 212, 255, 0.04)';
-        ctx.lineWidth = 0.5;
-        const gridSize = 30;
-        for (let x = 0; x < w; x += gridSize) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, h);
-            ctx.stroke();
-        }
-        for (let y = 0; y < h; y += gridSize) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(w, y);
-            ctx.stroke();
-        }
-
         // Center text
         ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
         ctx.font = '600 14px "JetBrains Mono", monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('VIDEO FEED', w / 2, h / 2 - 10);
+        ctx.fillText('WAITING FOR SCANNER', w / 2, h / 2 - 10);
         ctx.font = '400 10px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
-        ctx.fillText('Connect scanner to begin analysis', w / 2, h / 2 + 10);
+        ctx.fillText('Initializing detection pipeline...', w / 2, h / 2 + 10);
     }, [videoFrame, dimensions]);
 
     const scopeSize = Math.min(dimensions.w, dimensions.h) * 0.65;

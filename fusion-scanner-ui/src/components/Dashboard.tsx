@@ -27,7 +27,7 @@ export default function Dashboard({ data, videoFrame }: DashboardProps) {
                     <div className="flex items-center gap-2">
                         <div className={`w-1.5 h-1.5 rounded-full ${data.isConnected ? 'bg-scanner-green' : 'bg-scanner-grey'}`} />
                         <span className="text-[10px] font-mono text-white/40">
-                            {data.isConnected ? 'PIPELINE ACTIVE' : 'DEMO MODE'}
+                            {data.isConnected ? 'PIPELINE ACTIVE' : 'CONNECTING...'}
                         </span>
                     </div>
 
