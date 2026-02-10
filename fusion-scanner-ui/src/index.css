@@ -1,0 +1,145 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base Styles ──────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #0a0e17;
+  color: #e2e8f0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Scrollbar Styling ────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f1520;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e2d4a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2a3f5f;
+}
+
+/* ─── Glassmorphism Panel ──────────────────────────────────── */
+@layer components {
+  .glass-panel {
+    @apply bg-panel-800/60 backdrop-blur-xl border border-white/5 rounded-xl;
+  }
+
+  .glass-panel-solid {
+    @apply bg-panel-800 border border-white/5 rounded-xl;
+  }
+
+  .glow-border {
+    position: relative;
+  }
+
+  .glow-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      rgba(0, 212, 255, 0.15),
+      rgba(124, 58, 237, 0.1),
+      transparent
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Status badge styles */
+  .status-searching {
+    @apply bg-scanner-grey/20 text-scanner-grey border-scanner-grey/30;
+    box-shadow: 0 0 12px rgba(107, 114, 128, 0.15);
+  }
+
+  .status-acquiring {
+    @apply bg-scanner-yellow/20 text-scanner-yellow border-scanner-yellow/30;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.2);
+  }
+
+  .status-real {
+    @apply bg-scanner-green/20 text-scanner-green border-scanner-green/30;
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+  }
+
+  .status-fake {
+    @apply bg-scanner-red/20 text-scanner-red border-scanner-red/30;
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.25);
+  }
+
+  /* Score gauge */
+  .gauge-track {
+    background: linear-gradient(90deg, #0f1520 0%, #151d2e 100%);
+  }
+
+  .gauge-fill-green {
+    background: linear-gradient(90deg, #059669, #10B981, #34D399);
+  }
+
+  .gauge-fill-red {
+    background: linear-gradient(90deg, #DC2626, #EF4444, #F87171);
+  }
+
+  .gauge-fill-yellow {
+    background: linear-gradient(90deg, #D97706, #FBBF24, #FDE68A);
+  }
+}
+
+/* ─── Scan line effect ─────────────────────────────────────── */
+.scan-line-effect {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scan-line-effect::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 212, 255, 0.3),
+    transparent
+  );
+  animation: scanLine 3s linear infinite;
+}
+
+/* ─── Video feed grid overlay ──────────────────────────────── */
+.grid-overlay {
+  background-image:
+    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ─── Drag handle for Electron titlebar ────────────────────── */
+.titlebar-drag {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
